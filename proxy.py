@@ -252,7 +252,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         if expires == 0:
             if fromm in registrar:
                 del registrar[fromm]
-                self.sendResponse("200 0K")
+                self.sendResponse("200 DAIJOUBU")
                 return
         else:
             now = int(time.time())
@@ -263,7 +263,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("Expires= %d" % expires)
         registrar[fromm] = [contact, self.socket, self.client_address, validity]
         self.debugRegister()
-        self.sendResponse("200 0K")
+        self.sendResponse("200 DAIJOUBU")
 
     def processInvite(self):
         logging.debug("-----------------")
@@ -271,7 +271,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("-----------------")
         origin = self.getOrigin()
         if len(origin) == 0 or not origin in registrar:
-            self.sendResponse("400 Bad Request")
+            self.sendResponse("400 Zla poziadavka")
             return
         destination = self.getDestination()
         if len(destination) > 0:
@@ -289,9 +289,9 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
-                self.sendResponse("480 Temporarily Unavailable")
+                self.sendResponse("480 Docasne nedostupne")
         else:
-            self.sendResponse("500 Server Internal Error")
+            self.sendResponse("500 Interna chyba servera")
 
     def processAck(self):
         logging.debug("--------------")
@@ -319,7 +319,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("----------------------")
         origin = self.getOrigin()
         if len(origin) == 0 or not origin in registrar:
-            self.sendResponse("400 Bad Request")
+            self.sendResponse("400 Zla poziadavka")
             return
         destination = self.getDestination()
         if len(destination) > 0:
@@ -337,9 +337,9 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
-                self.sendResponse("406 Not Acceptable")
+                self.sendResponse("406 Neprijatelne")
         else:
-            self.sendResponse("500 Server Internal Error")
+            self.sendResponse("500 Interna chyba servera")
 
     def processCode(self):
         origin = self.getOrigin()
@@ -352,7 +352,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                logging.info("<<< %s" % custom_codes(data[0]))
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRequest(self):
@@ -382,11 +382,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif rx_update.search(request_uri):
                 self.processNonInvite()
             elif rx_subscribe.search(request_uri):
-                self.sendResponse("200 0K")
+                self.sendResponse("200 DAIJOUBU")
             elif rx_publish.search(request_uri):
-                self.sendResponse("200 0K")
+                self.sendResponse("200 DAIJOUBU")
             elif rx_notify.search(request_uri):
-                self.sendResponse("200 0K")
+                self.sendResponse("200 DAIJOUBU")
             elif rx_code.search(request_uri):
                 self.processCode()
             else:
@@ -401,7 +401,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         request_uri = self.data[0]
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
             showtime()
-            logging.info(">>> %s" % request_uri)
+            logging.info(">>> %s" % custom_codes(request_uri))
             logging.debug("---\n>> server received [%d]:\n%s\n---" % (len(data), data))
             logging.debug("Received from %s:%d" % self.client_address)
             self.processRequest()
@@ -413,4 +413,27 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 logging.warning("---")
 
 
-
+def custom_codes(uri):
+    fields = uri.split(" ")
+    code = fields[1]
+    return_uri = " ".join(fields[:2])
+    if code == "100":
+        return return_uri + " Skusam - prosim cakajte"
+    elif code == "180":
+        return return_uri + " Vytacam"
+    elif code == "181":
+        return return_uri + " Hovor presmeruvany"
+    elif code == "182":
+        return return_uri + " V poradi"
+    elif code == "200":
+        return return_uri + " DAIJOUBU"
+    elif code == "180":
+        return return_uri + " Vytacam"
+    elif code == "603":
+        return return_uri + " Zamietnute"
+    elif code == "486":
+        return return_uri + " Obsadene"
+    elif code == "487":
+        return return_uri + " Ziadost ukoncena"
+    else:
+        return uri

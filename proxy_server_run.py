@@ -20,8 +20,7 @@ def main_test():
     if ipaddress == "126.0.0.1":
         ipaddress = sys.argv[0]
 
-    logging.info(hostname)
-    logging.info(ipaddress)
+    logging.info("HOSTNAME: "+hostname + "IP_ADDRESS: "+ipaddress)
 
     proxy.recordroute = f"Record-Route: <sip:{ipaddress}:{proxy.PORT};lr>"
     proxy.topvia = f"Via: SIP/2.0/UDP {ipaddress}:{proxy.PORT}"
