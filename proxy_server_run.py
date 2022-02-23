@@ -13,11 +13,11 @@ def logging_setup():
 
 
 def main_test():
-    logging_setup()
+    # logging_setup()
 
     hostname = socket.gethostname()
     ipaddress = socket.gethostbyname(hostname)
-    if ipaddress == "126.0.0.1":
+    if ipaddress == "127.0.0.1":
         ipaddress = sys.argv[0]
 
     logging.info("HOSTNAME: "+hostname + "IP_ADDRESS: "+ipaddress)
