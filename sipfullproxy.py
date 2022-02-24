@@ -13,10 +13,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-import re
 import socketserver
+import re
+import socket
+import sys
 import time
+import logging
 
 HOST, PORT = '0.0.0.0', 5060
 rx_register = re.compile("^REGISTER")
@@ -65,6 +67,39 @@ recordroute = ""
 topvia = ""
 registrar = {}
 
+
+def custom_codes(uri):
+    fields = uri.split(" ")
+    if len(fields) > 2:
+        code = fields[1]
+        return_uri = " ".join(fields[:2])
+        if fields[0] == "SIP/2.0":
+            if code == "100":
+                return uri.replace("Trying", "Skusam - prosim cakajte")
+            elif code == "180":
+                return uri.replace("Ringing", "Vytacam")
+            elif code == "181":
+                uri.replace("Call", "Hovor")
+                uri.replace("is", "je")
+                uri.replace("Being", "presmeruvany")
+                return uri.replace("Forwarded", "")
+            elif code == "182":
+                return uri.replace("Queued", "V poradi")
+            elif code == "200":
+                return uri.replace("OK", "FAJN")
+            elif code == "603":
+                return uri.replace("Decline", "Zamietnute")
+            elif code == "486":
+                uri.replace("Busy", "Obsadene")
+                return uri.replace("Here", "")
+            elif code == "487":
+                uri.replace("Request", "Ziadost")
+                return uri.replace("Terminated", "Ukoncena")
+            else:
+                return uri
+        else:
+            return uri
+    return uri
 
 def hexdump(chars, sep, width):
     while chars:
@@ -204,7 +239,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         text = "\r\n".join(data)
         self.socket.sendto(text.encode("utf-8"), self.client_address)
         showtime()
-        logging.info("<<< %s" % data[0])
+        logging.info("<<< %s" % custom_codes(data[0]))
         logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRegister(self):
@@ -240,10 +275,10 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 header_expires = md.group(1)
 
         # if rx_invalid.search(contact) or rx_invalid2.search(contact):
-        #    if fromm in registrar:
-        #       del registrar[fromm]
-        #    self.sendResponse("488 Not Acceptable Here")
-        #    return
+        #     if registrar.has_key(fromm):
+        #         del registrar[fromm]
+        #     self.sendResponse("488 Not Acceptable Here")
+        #     return
         if len(contact_expires) > 0:
             expires = int(contact_expires)
         elif len(header_expires) > 0:
@@ -252,7 +287,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         if expires == 0:
             if fromm in registrar:
                 del registrar[fromm]
-                self.sendResponse("200 DAIJOUBU")
+                self.sendResponse("200 FAJN")
                 return
         else:
             now = int(time.time())
@@ -263,14 +298,14 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("Expires= %d" % expires)
         registrar[fromm] = [contact, self.socket, self.client_address, validity]
         self.debugRegister()
-        self.sendResponse("200 DAIJOUBU")
+        self.sendResponse("200 FAJN")
 
     def processInvite(self):
         logging.debug("-----------------")
         logging.debug(" INVITE received ")
         logging.debug("-----------------")
         origin = self.getOrigin()
-        if len(origin) == 0 or not origin in registrar:
+        if len(origin) == 0 or origin not in registrar:
             self.sendResponse("400 Zla poziadavka")
             return
         destination = self.getDestination()
@@ -286,7 +321,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                logging.info("<<< %s" % custom_codes(data[0]))
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("480 Docasne nedostupne")
@@ -308,9 +343,9 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 # insert Record-Route
                 data.insert(1, recordroute)
                 text = "\r\n".join(data)
-                socket.sendto(text.encode(), claddr)
+                socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                logging.info("<<< %s" % custom_codes(data[0]))
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processNonInvite(self):
@@ -318,7 +353,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug(" NonInvite received   ")
         logging.debug("----------------------")
         origin = self.getOrigin()
-        if len(origin) == 0 or not origin in registrar:
+        if len(origin) == 0 or origin not in registrar:
             self.sendResponse("400 Zla poziadavka")
             return
         destination = self.getDestination()
@@ -334,7 +369,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                logging.info("<<< %s" % custom_codes(data[0]))
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("406 Neprijatelne")
@@ -382,11 +417,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif rx_update.search(request_uri):
                 self.processNonInvite()
             elif rx_subscribe.search(request_uri):
-                self.sendResponse("200 DAIJOUBU")
+                self.sendResponse("200 FAJN")
             elif rx_publish.search(request_uri):
-                self.sendResponse("200 DAIJOUBU")
+                self.sendResponse("200 FAJN")
             elif rx_notify.search(request_uri):
-                self.sendResponse("200 DAIJOUBU")
+                self.sendResponse("200 FAJN")
             elif rx_code.search(request_uri):
                 self.processCode()
             else:
@@ -398,10 +433,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
         data = self.request[0].decode("utf-8")
         self.data = data.split("\r\n")
         self.socket = self.request[1]
-        request_uri = self.data[0]
+        request_uri = custom_codes(self.data[0])
+        print(request_uri)
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
             showtime()
-            logging.info(">>> %s" % custom_codes(request_uri))
+            logging.info(">>> %s" % request_uri)
             logging.debug("---\n>> server received [%d]:\n%s\n---" % (len(data), data))
             logging.debug("Received from %s:%d" % self.client_address)
             self.processRequest()
@@ -413,27 +449,20 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 logging.warning("---")
 
 
-def custom_codes(uri):
-    fields = uri.split(" ")
-    code = fields[1]
-    return_uri = " ".join(fields[:2])
-    if code == "100":
-        return return_uri + " Skusam - prosim cakajte"
-    elif code == "180":
-        return return_uri + " Vytacam"
-    elif code == "181":
-        return return_uri + " Hovor presmeruvany"
-    elif code == "182":
-        return return_uri + " V poradi"
-    elif code == "200":
-        return return_uri + " DAIJOUBU"
-    elif code == "180":
-        return return_uri + " Vytacam"
-    elif code == "603":
-        return return_uri + " Zamietnute"
-    elif code == "486":
-        return return_uri + " Obsadene"
-    elif code == "487":
-        return return_uri + " Ziadost ukoncena"
-    else:
-        return uri
+if __name__ == "__main__":
+    logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', filename='proxy_server.log', level=logging.INFO,
+                        datefmt='%H:%M:%S')
+    logging.info(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
+    hostname = socket.gethostname()
+    logging.info(hostname)
+    ipaddress = socket.gethostbyname(hostname)
+    if ipaddress == "127.0.0.1":
+        ipaddress = sys.argv[1]
+    logging.info(ipaddress)
+    print(hostname, ipaddress)
+    recordroute = "Record-Route: <sip:%s:%d;lr>" % (ipaddress, PORT)
+    topvia = "Via: SIP/2.0/UDP %s:%d" % (ipaddress, PORT)
+    server = socketserver.UDPServer((HOST, PORT), UDPHandler)
+    server.serve_forever()
+
+
