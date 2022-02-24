@@ -85,8 +85,6 @@ def custom_codes(uri):
                 return uri.replace("Forwarded", "")
             elif code == "182":
                 return uri.replace("Queued", "V poradi")
-            elif code == "200":
-                return uri.replace("OK", "FAJN")
             elif code == "603":
                 return uri.replace("Decline", "Zamietnute")
             elif code == "405":
@@ -291,7 +289,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         if expires == 0:
             if fromm in registrar:
                 del registrar[fromm]
-                self.sendResponse("200 FAJN")
+                self.sendResponse("200 Ok")
                 return
         else:
             now = int(time.time())
@@ -302,7 +300,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("Expires= %d" % expires)
         registrar[fromm] = [contact, self.socket, self.client_address, validity]
         self.debugRegister()
-        self.sendResponse("200 FAJN")
+        self.sendResponse("200 Ok")
 
     def processInvite(self):
         logging.debug("-----------------")
@@ -421,11 +419,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif rx_update.search(request_uri):
                 self.processNonInvite()
             elif rx_subscribe.search(request_uri):
-                self.sendResponse("200 FAJN")
+                self.sendResponse("200 Ok")
             elif rx_publish.search(request_uri):
-                self.sendResponse("200 FAJN")
+                self.sendResponse("200 Ok")
             elif rx_notify.search(request_uri):
-                self.sendResponse("200 FAJN")
+                self.sendResponse("200 Ok")
             elif rx_code.search(request_uri):
                 self.processCode()
             else:
