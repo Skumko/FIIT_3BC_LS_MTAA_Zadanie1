@@ -1,4 +1,5 @@
-import proxy
+# import proxy
+import sipfullproxy
 import socketserver
 import socket
 import sys
@@ -13,18 +14,19 @@ def logging_setup():
 
 
 def main_test():
-    # logging_setup()
+    logging_setup()
 
     hostname = socket.gethostname()
     ipaddress = socket.gethostbyname(hostname)
+
     if ipaddress == "127.0.0.1":
         ipaddress = sys.argv[0]
 
     logging.info("HOSTNAME: "+hostname + "IP_ADDRESS: "+ipaddress)
-
-    proxy.recordroute = f"Record-Route: <sip:{ipaddress}:{proxy.PORT};lr>"
-    proxy.topvia = f"Via: SIP/2.0/UDP {ipaddress}:{proxy.PORT}"
-    server = socketserver.UDPServer((proxy.HOST, proxy.PORT), proxy.UDPHandler)
+    print(hostname, ipaddress)
+    sipfullproxy.recordroute = f"Record-Route: <sip:{ipaddress}:{sipfullproxy.PORT};lr>"
+    sipfullproxy.topvia = f"Via: SIP/2.0/UDP {ipaddress}:{sipfullproxy.PORT}"
+    server = socketserver.UDPServer((ipaddress, sipfullproxy.PORT), sipfullproxy.UDPHandler)
     server.serve_forever()
 
 
