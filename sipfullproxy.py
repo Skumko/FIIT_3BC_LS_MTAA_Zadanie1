@@ -79,9 +79,9 @@ def custom_codes(uri):
             elif code == "180":
                 return uri.replace("Ringing", "Vytacam")
             elif code == "181":
-                uri.replace("Call", "Hovor")
-                uri.replace("is", "je")
-                uri.replace("Being", "presmeruvany")
+                uri = uri.replace("Call", "Hovor")
+                uri = uri.replace("is", "je")
+                uri = uri.replace("Being", "presmeruvany")
                 return uri.replace("Forwarded", "")
             elif code == "182":
                 return uri.replace("Queued", "V poradi")
@@ -89,11 +89,15 @@ def custom_codes(uri):
                 return uri.replace("OK", "FAJN")
             elif code == "603":
                 return uri.replace("Decline", "Zamietnute")
+            elif code == "405":
+                uri = uri.replace("Method", "Metoda")
+                uri = uri.replace("not", "nepovolena")
+                return uri.replace("allowed", "")
             elif code == "486":
-                uri.replace("Busy", "Obsadene")
+                uri = uri.replace("Busy", "Obsadene")
                 return uri.replace("Here", "")
             elif code == "487":
-                uri.replace("Request", "Ziadost")
+                uri = uri.replace("Request", "Ziadost")
                 return uri.replace("Terminated", "Ukoncena")
             else:
                 return uri
