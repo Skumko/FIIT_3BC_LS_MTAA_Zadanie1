@@ -22,7 +22,7 @@ def main_test():
     if ipaddress == "127.0.0.1":
         ipaddress = sys.argv[0]
 
-    logging.info("SERVER RUNNING --> HOSTNAME: " + hostname + " ... IP_ADDRESS: " + ipaddress)
+    logging.info("SERVER RUNNING --> HOSTNAME: " + hostname + " <<<>>> IP_ADDRESS: " + ipaddress)
     print(hostname, ipaddress)
     sipfullproxy.recordroute = f"Record-Route: <sip:{ipaddress}:{sipfullproxy.PORT};lr>"
     sipfullproxy.topvia = f"Via: SIP/2.0/UDP {ipaddress}:{sipfullproxy.PORT}"

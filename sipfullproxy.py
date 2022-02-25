@@ -72,36 +72,41 @@ def custom_codes(uri):
     fields = uri.split(" ")
     if len(fields) > 2:
         code = fields[1]
-        return_uri = " ".join(fields[:2])
         if fields[0] == "SIP/2.0":
             if code == "100":
                 return uri.replace("Trying", "Skusam - prosim cakajte")
             elif code == "180":
                 return uri.replace("Ringing", "Vytacam")
             elif code == "181":
-                uri = uri.replace("Call", "Hovor")
-                uri = uri.replace("is", "je")
-                uri = uri.replace("Being", "presmeruvany")
-                return uri.replace("Forwarded", "")
+                # the code message here is "Call is being forwarded"
+                fields[2] = "Hovor"
+                fields[3] = "je"
+                fields[4] = "presmeruvany"
+                fields[5] = ""
+                return ' '.join(fields)
             elif code == "182":
                 return uri.replace("Queued", "V poradi")
             elif code == "603":
                 return uri.replace("Decline", "Zamietnute")
             elif code == "405":
-                uri = uri.replace("Method", "Metoda")
-                uri = uri.replace("not", "nepovolena")
-                return uri.replace("allowed", "")
+                fields[2] = "Metoda"
+                fields[3] = "je"
+                fields[4] = "nepovolena"
+                return ' '.join(fields)
             elif code == "486":
-                uri = uri.replace("Busy", "Obsadene")
-                return uri.replace("Here", "")
+                fields[2] = "Obsadene"
+                fields[3] = ""
+                return ' '.join(fields)
             elif code == "487":
-                uri = uri.replace("Request", "Ziadost")
-                return uri.replace("Terminated", "Ukoncena")
+                fields[2] = "Ziadost"
+                fields[3] = "Ukoncena"
+                return ' '.join(fields)
             else:
                 return uri
         else:
             return uri
     return uri
+
 
 def hexdump(chars, sep, width):
     while chars:
@@ -241,7 +246,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         text = "\r\n".join(data)
         self.socket.sendto(text.encode("utf-8"), self.client_address)
         showtime()
-        logging.info("<<< %s" % custom_codes(data[0]))
+        logging.info("<<< %s" % data[0])
         logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRegister(self):
@@ -320,10 +325,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
+                data[0] = custom_codes(data[0])
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % custom_codes(data[0]))
+                logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("480 Docasne nedostupne")
@@ -344,10 +350,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
+                data[0] = custom_codes(data[0])
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % custom_codes(data[0]))
+                logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processNonInvite(self):
@@ -368,10 +375,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
+                data[0] = custom_codes(data[0])
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % custom_codes(data[0]))
+                logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("406 Neprijatelne")
@@ -386,10 +394,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 socket, claddr = self.getSocketInfo(origin)
                 self.data = self.removeRouteHeader()
                 data = self.removeTopVia()
+                data[0] = custom_codes(data[0])
                 text = "\r\n".join(data)
                 socket.sendto(text.encode("utf-8"), claddr)
                 showtime()
-                logging.info("<<< %s" % custom_codes(data[0]))
+                logging.info("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRequest(self):
@@ -436,7 +445,6 @@ class UDPHandler(socketserver.BaseRequestHandler):
         self.data = data.split("\r\n")
         self.socket = self.request[1]
         request_uri = custom_codes(self.data[0])
-        print(request_uri)
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
             showtime()
             logging.info(">>> %s" % request_uri)
