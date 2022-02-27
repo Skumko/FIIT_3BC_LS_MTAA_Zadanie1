@@ -463,7 +463,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         data = self.request[0].decode("utf-8")
         self.data = data.split("\r\n")
         self.socket = self.request[1]
-        request_uri = custom_codes(self.data[0])
+        request_uri = self.data[0]
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
             showtime()
             logging.debug("---\n>> server received [%d]:\n%s\n---" % (len(data), data))
