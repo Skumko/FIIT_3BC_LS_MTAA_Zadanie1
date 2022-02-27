@@ -1,10 +1,20 @@
-# import proxy
-import sipfullproxy
 import socketserver
 import socket
 import sys
 import time
 import logging
+
+import sipfullproxy
+
+# sipfullproxy lib is a part of GNU General Public License
+# ***************************************************************************************
+#    Title: PySipFullProxy
+#    Author: Philippe THIRION (tirfil)
+#    Date: 19.02.2022
+#    Code version: 1.0
+#    Availability: https://github.com/tirfil/PySipFullProxy/blob/master/sipfullproxy.py
+#
+# **************************************************************************************
 
 
 def logging_setup():
@@ -24,8 +34,12 @@ def main_test():
 
     logging.info("SERVER RUNNING --> HOSTNAME: " + hostname + " <<<>>> IP_ADDRESS: " + ipaddress + "\n")
     print(hostname, ipaddress)
+
+    # setting up global variable with accordance to server implementation
     sipfullproxy.recordroute = f"Record-Route: <sip:{ipaddress}:{sipfullproxy.PORT};lr>"
     sipfullproxy.topvia = f"Via: SIP/2.0/UDP {ipaddress}:{sipfullproxy.PORT}"
+
+    # creating a socketserver Server object, that will take logic implemented in sipfullproxy
     server = socketserver.UDPServer((ipaddress, sipfullproxy.PORT), sipfullproxy.UDPHandler)
     server.serve_forever()
 
